@@ -1,0 +1,126 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.css" rel="stylesheet" />
+  
+  <script src="https://unpkg.com/deck.gl@~6.0.0/deckgl.min.js"></script>
+  <!--<script src="https://unpkg.com/deck.gl@~5.2.0/deckgl.min.js"></script>-->
+  <!-- only if base map is needed -->
+  <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.js"></script>
+
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+  <div id="container" style="width: 100vw; height: 100vh;"></div>
+</body>
+
+<script type="text/javascript">
+  class AwesomeLayer extends Layer {
+
+  };
+
+
+  const {DeckGL, ScatterplotLayer} = deck;
+
+  const deckgl = new DeckGL({
+    mapboxApiAccessToken: 'pk.eyJ1IjoianBvY29tIiwiYSI6ImNqbmZkZmV5aDFlMGEzdm5yNXQ1dzJrMmsifQ.-z-5Kfwg_n47WFQKN5lQnQ',
+    mapStyle: 'mapbox://styles/mapbox/dark-v9',
+    latitude: -34.873946,
+    longitude: -56.214755,
+    zoom: 12,
+    minZoom: 5,
+    maxZoom: 15,
+    pitch: 80
+  });
+
+  let data = null;
+  let colors =  d3.scaleOrdinal(d3.schemeCategory10);
+  var timeScale = d3.scaleTime().range([0, 10000]);
+  let format = d3.timeParse("%Y-%m-%d %H:%M:%S");
+
+
+    function renderLayer() {
+    const lowerLayer = new deck.ScatterplotLayer({
+      id: 'low-layer',
+      data,
+      opacity: 0.8,
+      radiusScale: 1,
+      radiusMinPixels: 1,
+      radiusMaxPixels: 100,
+      getPosition: d => [d.lon, d.lat, timeScale(d.initial)],
+      getRadius: d => 100,
+      getColor: d => {
+        const c = d3.color(colors(d.cluster%10));
+        return [c.r, c.g, c.b]
+      }
+    });
+
+    const topLayer = new deck.ScatterplotLayer({
+      id: 'top-layer',
+      data,
+      opacity: 0.8,
+      radiusScale: 1,
+      radiusMinPixels: 1,
+      radiusMaxPixels: 100,
+      getPosition: d => [d.lon, d.lat, timeScale(d.end)],
+      getRadius: d => 100,
+      getColor: d => {
+        const c = d3.color(colors(d.cluster%10));
+        return [c.r, c.g, c.b]
+      }
+    });
+
+    const lineLayer = new deck.LineLayer({
+      id: 'line-layer',
+      data,
+      opacity: 0.8,
+      getStrokeWidth: 2,
+      getSourcePosition: d => [d.lon, d.lat, timeScale(d.initial)],
+      getTargetPosition: d => [d.lon, d.lat, timeScale(d.end)],
+      getColor: d => {
+        const c = d3.color(colors(d.cluster%10));
+        return [c.r, c.g, c.b]
+      }
+    });
+
+    deckgl.setProps({
+      // layers: [lowerLayer, topLayer, lineLayer]
+      layers: [lineLayer, lowerLayer, topLayer]
+    });
+  }
+
+
+      var response = {"datasets":[{"version":"v1","data":{"id":"kbtq1gagw","label":"locations(2).csv","color":[162,212,171],"allData":[[584,-34.805666,-56.22191,358,"2018-09-18 08:33:00","2018-09-18 08:58:00"],[585,-34.873574,-56.215816,1,"2018-08-15 15:26:00","2018-08-15 15:49:00"]],"fields":[{"name":"column_0","type":"integer","format":""},{"name":"Acidente_lat","type":"real","format":""},{"name":"Acidente_lng","type":"real","format":""},{"name":"Cluster","type":"integer","format":""},{"name":"T_inicial","type":"timestamp","format":"YYYY-M-DH:m:s"},{"name":"T_final","type":"timestamp","format":"YYYY-M-DH:m:s"}]}}],"config":{"version":"v1","config":{"visState":{"filters":[{"dataId":"kbtq1gagw","id":"vye9fhy14","name":"T_inicial","type":"timeRange","value":[1534280682000,1534361028000],"enlarged":true,"plotType":"histogram","yAxis":null}],"layers":[{"id":"59snew4","type":"point","config":{"dataId":"kbtq1gagw","label":"acidente","color":[246,209,138,255],"columns":{"lat":"Acidente_lat","lng":"Acidente_lng","altitude":null},"isVisible":true,"visConfig":{"radius":10,"fixedRadius":false,"opacity":0.8,"outline":false,"thickness":2,"colorRange":{"name":"UberVizQualitative4","type":"qualitative","category":"Uber","colors":["#12939A","#DDB27C","#88572C","#FF991F","#F15C17","#223F9A","#DA70BF","#125C77","#4DC19C","#776E57","#17B8BE","#F6D18A","#B7885E","#FFCB99","#F89570","#829AE3","#E79FD5","#1E96BE","#89DAC1","#B3AD9E"],"reversed":false},"radiusRange":[0,50],"hi-precision":false},"textLabel":{"field":null,"color":[255,255,255],"size":50,"offset":[0,0],"anchor":"middle"}},"visualChannels":{"colorField":{"name":"Cluster","type":"integer"},"colorScale":"quantile","sizeField":null,"sizeScale":"linear"}}],"interactionConfig":{"tooltip":{"fieldsToShow":{"kbtq1gagw":["column_0","Cluster","T_inicial","T_final"]},"enabled":true},"brush":{"size":0.5,"enabled":false}},"layerBlending":"normal","splitMaps":[]},"mapState":{"bearing":0,"dragRotate":false,"latitude":-34.876590326618896,"longitude":-56.18178206744958,"pitch":0,"zoom":11.869251209917437,"isSplit":false},"mapStyle":{"styleType":"dark","topLayerGroups":{},"visibleLayerGroups":{"label":true,"road":true,"border":false,"building":true,"water":true,"land":true},"mapStyles":{}}}},"info":{"app":"kepler.gl","created_at":"ThuOct18201822:04:13GMT-0300(HoraoficialdoBrasil)"}}
+
+
+  //d3.json('short_accidents.json')
+  //  .then(response => {
+      data = response.datasets[0].data.allData;
+      
+
+
+      data.forEach(function(part, index) {
+        //this[index] = "hello world";
+        this[index].initial = format(this[index][4]);
+        this[index].end = format(this[index][5]);
+        this[index].lat = this[index][1];
+        this[index].lon = this[index][2];
+        this[index].cluster = this[index][3]
+
+      }, data); // use arr as this
+
+      console.log(data.length);
+      const limit = new Date(2018, 8, 0);
+      data = data.filter(d => { return d.end < limit; });
+
+      var minTime = d3.min(data, d => d.initial);
+      var maxTime = d3.max(data, d => d.end);
+      timeScale.domain([minTime, maxTime]);
+      console.log(minTime, maxTime);
+      console.log(timeScale(minTime), timeScale(maxTime));
+
+      renderLayer();
+    //});
+
+</script>
+</html>
