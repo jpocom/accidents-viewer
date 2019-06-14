@@ -1,0 +1,125 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.css" rel="stylesheet" />
+  
+  <script src="https://unpkg.com/deck.gl@~6.0.0/deckgl.min.js"></script>
+  <!--<script src="https://unpkg.com/deck.gl@~5.2.0/deckgl.min.js"></script>-->
+  <!-- only if base map is needed -->
+  <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.js"></script>
+
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+  <div id="container" style="width: 100vw; height: 100vh;"></div>
+</body>
+
+<script src="data.js"></script>
+
+<script type="text/javascript">
+  class AwesomeLayer extends Layer {
+
+  };
+
+
+  const {DeckGL, ScatterplotLayer} = deck;
+
+  const deckgl = new DeckGL({
+    mapboxApiAccessToken: 'pk.eyJ1IjoianBvY29tIiwiYSI6ImNqbmZkZmV5aDFlMGEzdm5yNXQ1dzJrMmsifQ.-z-5Kfwg_n47WFQKN5lQnQ',
+    mapStyle: 'mapbox://styles/mapbox/dark-v9',
+    latitude: -34.873946,
+    longitude: -56.214755,
+    zoom: 12,
+    minZoom: 5,
+    maxZoom: 15,
+    pitch: 80
+  });
+
+  let data = null;
+  let colors =  d3.scaleOrdinal(d3.schemeCategory10);
+  var timeScale = d3.scaleTime().range([0, 10000]);
+  let format = d3.timeParse("%Y-%m-%d %H:%M:%S");
+
+
+    function renderLayer() {
+    const lowerLayer = new deck.ScatterplotLayer({
+      id: 'low-layer',
+      data,
+      opacity: 0.8,
+      radiusScale: 1,
+      radiusMinPixels: 1,
+      radiusMaxPixels: 100,
+      getPosition: d => [d.lon, d.lat, timeScale(d.initial)],
+      getRadius: d => 100,
+      getColor: d => {
+        const c = d3.color(colors(d.cluster%10));
+        return [c.r, c.g, c.b]
+      }
+    });
+
+    const topLayer = new deck.ScatterplotLayer({
+      id: 'top-layer',
+      data,
+      opacity: 0.8,
+      radiusScale: 1,
+      radiusMinPixels: 1,
+      radiusMaxPixels: 100,
+      getPosition: d => [d.lon, d.lat, timeScale(d.end)],
+      getRadius: d => 100,
+      getColor: d => {
+        const c = d3.color(colors(d.cluster%10));
+        return [c.r, c.g, c.b]
+      }
+    });
+
+    const lineLayer = new deck.LineLayer({
+      id: 'line-layer',
+      data,
+      opacity: 0.8,
+      getStrokeWidth: 2,
+      getSourcePosition: d => [d.lon, d.lat, timeScale(d.initial)],
+      getTargetPosition: d => [d.lon, d.lat, timeScale(d.end)],
+      getColor: d => {
+        const c = d3.color(colors(d.cluster%10));
+        return [c.r, c.g, c.b]
+      }
+    });
+
+    deckgl.setProps({
+      // layers: [lowerLayer, topLayer, lineLayer]
+      layers: [lineLayer, lowerLayer, topLayer]
+    });
+  }
+
+
+  //d3.json('short_accidents.json')
+  //  .then(response => {
+      data = response.datasets[0].data.allData;
+      
+
+
+      data.forEach(function(part, index) {
+        //this[index] = "hello world";
+        this[index].initial = format(this[index][4]);
+        this[index].end = format(this[index][5]);
+        this[index].lat = this[index][1];
+        this[index].lon = this[index][2];
+        this[index].cluster = this[index][3]
+
+      }, data); // use arr as this
+
+      console.log(data.length);
+      const limit = new Date(2018, 8, 0);
+      data = data.filter(d => { return d.end < limit; });
+
+      var minTime = d3.min(data, d => d.initial);
+      var maxTime = d3.max(data, d => d.end);
+      timeScale.domain([minTime, maxTime]);
+      console.log(minTime, maxTime);
+      console.log(timeScale(minTime), timeScale(maxTime));
+
+      renderLayer();
+    //});
+
+</script>
+</html>
