@@ -1,12 +1,13 @@
 <html>
 <head>
-  <script src="https://unpkg.com/deck.gl@~6.0.0/deckgl.min.js"></script>
-  <!--<script src="https://unpkg.com/deck.gl@~5.2.0/deckgl.min.js"></script>-->
+  <script src="https://unpkg.com/deck.gl@^7.0.0/dist.min.js"></script>
+  
   <!-- only if base map is needed -->
   <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.js"></script>
   <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.css" rel="stylesheet" />
 
   <script src="https://d3js.org/d3.v5.min.js"></script>
+  
 </head>
 <body>
 <div id="container" style="width: 100vw; height: 100vh;"></div>
@@ -33,7 +34,7 @@
 
   let data = null;
   let colors =  d3.scaleOrdinal(d3.schemeCategory10);
-  var timeScale = d3.scaleTime().range([0, 10000]);
+  var timeScale = d3.scaleTime().range([0, 1]);
   let format = d3.timeParse("%Y-%m-%d %H:%M:%S");
 
 
@@ -80,10 +81,33 @@
         return [c.r, c.g, c.b]
       }
     });
+    
+    const layer = new ColumnLayer({
+        id: 'column-layer',
+        data,
+        diskResolution: 12,
+        radius: 50,
+        extruded: true,
+        pickable: true,
+        elevationScale: 5000,
+        getPosition: d => [d.lon, d.lat],
+        getFillColor: d => {
+          const c = d3.color(colors(d.cluster%10));
+          return [c.r, c.g, c.b]
+        },
+        getLineColor: [0, 0, 0],
+        getElevation: d => {
+          return timeScale(d.end)
+        },
+        onHover: ({object, x, y}) => {
+          const tooltip = `height: ${object.value * 5000}m`;
+        }
+      });
 
     deckgl.setProps({
       // layers: [lowerLayer, topLayer, lineLayer]
-      layers: [lineLayer, lowerLayer, topLayer]
+      // layers: [lineLayer, lowerLayer, topLayer]
+      layers: [layer]
     });
   }
 
